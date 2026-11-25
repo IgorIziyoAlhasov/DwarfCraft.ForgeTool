@@ -85,20 +85,52 @@ function ComparisonValue({ entry }) {
 }
 
 function Comparison({ left, right }) {
-  const changes = compareBanks(left, right);
-  return <section className="card">
-    <h2>Bank comparison</h2>
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [labeledOnly, setLabeledOnly] = useState(false);
+  const search = query.trim().toLowerCase();
+  const changes = compareBanks(left, right).map(change => ({
+    ...change,
+    label: (change.before && observedLabel(left, change.before)) ||
+      (change.after && observedLabel(right, change.after)) || '',
+  }));
+  const visibleChanges = changes.filter(({ path, label, status, before, after }) =>
+    (!statusFilter || status === statusFilter) &&
+    (!labeledOnly || label) &&
+    [path, label, before?.xml ?? '', after?.xml ?? ''].some(value => value.toLowerCase().includes(search))
+  );
+
+  return <section className="card" aria-labelledby="comparison-heading">
+    <h2 id="comparison-heading">Bank comparison</h2>
     <p>{left.hash === right.hash ? 'Byte-identical files.' : 'File hashes differ.'} {changes.length} structural changes.</p>
-    {changes.length > 0 && <div className="table-wrap inspection-table" tabIndex={0} role="region" aria-label="Changed bank entries"><table>
+    {changes.length > 0 && <>
+      <div className="inspection-controls">
+        <label>Search changes
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} />
+        </label>
+        <label>Change status
+          <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+            <option value="">All statuses</option>
+            <option>Added</option>
+            <option>Removed</option>
+            <option>Changed</option>
+          </select>
+        </label>
+        <label className="checkbox-label">
+          <input type="checkbox" checked={labeledOnly} onChange={event => setLabeledOnly(event.target.checked)} />
+          Labeled changes only
+        </label>
+      </div>
+      <p role="status">{visibleChanges.length} of {changes.length} changes</p>
+      {visibleChanges.length === 0 && <p>No changes match these filters.</p>}
+    </>}
+    {visibleChanges.length > 0 && <div className="table-wrap inspection-table" tabIndex={0} role="region" aria-label="Changed bank entries"><table>
       <thead><tr><th>Path</th><th>DwarfCraft label</th><th>Status</th><th>Primary · {left.name}</th><th>Comparison · {right.name}</th></tr></thead>
-      <tbody>{changes.map(({ id, path, status, before, after }) => {
-        const label = (before && observedLabel(left, before)) || (after && observedLabel(right, after));
-        return <tr key={id}>
-          <td>{path}</td><td>{label}</td><td>{status}</td>
-          <td><ComparisonValue entry={before} /></td>
-          <td><ComparisonValue entry={after} /></td>
-        </tr>;
-      })}</tbody>
+      <tbody>{visibleChanges.map(({ id, path, label, status, before, after }) => <tr key={id}>
+        <td>{path}</td><td>{label}</td><td>{status}</td>
+        <td><ComparisonValue entry={before} /></td>
+        <td><ComparisonValue entry={after} /></td>
+      </tr>)}</tbody>
     </table></div>}
   </section>;
 }

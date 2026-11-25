@@ -82,3 +82,23 @@ test('DCF-INS-006 compares labeled integer values and exposes original entry XML
   await expect(comparison.getByRole('row').filter({ hasText: 'Available enhancement points' })).toContainText('Removed');
   await expect(comparison.getByRole('row').filter({ hasText: 'e0 / cl' })).toContainText('Added');
 });
+
+test('DCF-INS-007 combines comparison filters independently of bank search', async ({ page }) => {
+  await page.goto('/');
+  const before = '<Bank version="1"><Section name="e0"><Key name="cp"><Value int="123"/></Key><Key name="ap"><Value int="9"/></Key></Section></Bank>';
+  const after = '<Bank version="1"><Section name="e0"><Key name="cp"><Value int="456"/></Key><Key name="cl"><Value int="5"/></Key><Key name="other"><Value int="456"/></Key></Section></Bank>';
+  await upload(page, 'Primary bank', before);
+  await upload(page, 'Comparison bank (optional)', after, 'second.SC2Bank');
+  const panel = page.getByRole('region', { name: 'Bank comparison' });
+  const search = panel.getByRole('searchbox', { name: 'Search changes' });
+  await expect(panel.getByRole('status')).toHaveText('4 of 4 changes');
+  await search.fill('456');
+  await expect(panel.getByRole('status')).toHaveText('2 of 4 changes');
+  await panel.getByRole('checkbox', { name: 'Labeled changes only' }).check();
+  await expect(panel.getByRole('status')).toHaveText('1 of 4 changes');
+  await panel.getByRole('combobox', { name: 'Change status' }).selectOption('Removed');
+  await expect(panel.getByText('No changes match these filters.')).toBeVisible();
+  await search.clear();
+  await expect(panel.getByRole('row').filter({ hasText: 'Available enhancement points' })).toContainText('Removed');
+  await expect(page.getByRole('searchbox', { name: 'Search bank contents' })).toHaveValue('');
+});
