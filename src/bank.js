@@ -20,10 +20,15 @@ export function parseBank(source) {
   const document = new DOMParser().parseFromString(source, 'application/xml');
   if (document.doctype) throw new Error('Bank files with a DOCTYPE are unsupported.');
   const root = document.documentElement;
-  const parserErrors = document.getElementsByTagNameNS(
-    'http://www.mozilla.org/newlayout/xml/parsererror.xml', 'parsererror',
-  );
-  if (!root || parserErrors.length) throw new Error('The file contains malformed XML.');
+  const parserErrorNamespaces = [
+    'http://www.mozilla.org/newlayout/xml/parsererror.xml',
+    'http://www.w3.org/1999/xhtml',
+  ];
+  if (!root || parserErrorNamespaces.some(namespace =>
+    document.getElementsByTagNameNS(namespace, 'parsererror').length > 0
+  )) {
+    throw new Error('The file contains malformed XML.');
+  }
   if (root.tagName !== 'Bank' || root.namespaceURI) throw new Error('Expected an XML Bank root.');
 
   const diagnostics = [];
