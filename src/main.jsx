@@ -41,16 +41,36 @@ function BankInput({ label, onChange }) {
 }
 
 function Inspection({ bank }) {
+  const [query, setQuery] = useState('');
+  const [labeledOnly, setLabeledOnly] = useState(false);
+  const search = query.trim().toLowerCase();
+  const rows = bank.entries.map(row => ({ row, label: observedLabel(bank, row) }));
+  const visibleRows = rows.filter(({ row, label }) =>
+    (!labeledOnly || label) &&
+    [row.displayPath, label, row.integer ?? row.xml].some(value => value.toLowerCase().includes(search))
+  );
+
   return <section className="card">
     <h2>Bank contents</h2>
     <p>DwarfCraft labels reflect the fields observed in the reference captures.</p>
-    <div className="table-wrap"><table>
+    <div className="inspection-controls">
+      <label>Search bank contents
+        <input type="search" value={query} onChange={event => setQuery(event.target.value)} />
+      </label>
+      <label className="checkbox-label">
+        <input type="checkbox" checked={labeledOnly} onChange={event => setLabeledOnly(event.target.checked)} />
+        Labeled fields only
+      </label>
+    </div>
+    <p role="status">{visibleRows.length} of {rows.length} entries</p>
+    {visibleRows.length === 0 && <p>{rows.length ? 'No entries match these filters.' : 'This bank has no entries.'}</p>}
+    {visibleRows.length > 0 && <div className="table-wrap inspection-table" tabIndex={0} role="region" aria-label="Bank entries"><table>
       <thead><tr><th>Path</th><th>DwarfCraft label</th><th>Value / XML</th></tr></thead>
-      <tbody>{bank.entries.map(row => <tr key={row.id}>
-        <td>{row.displayPath}</td><td>{observedLabel(bank, row)}</td>
+      <tbody>{visibleRows.map(({ row, label }) => <tr key={row.id}>
+        <td>{row.displayPath}</td><td>{label}</td>
         <td><code>{row.integer ?? row.xml}</code></td>
       </tr>)}</tbody>
-    </table></div>
+    </table></div>}
     <details><summary>Original XML text</summary><pre>{bank.source}</pre></details>
   </section>;
 }

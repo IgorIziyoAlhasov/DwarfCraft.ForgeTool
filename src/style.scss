@@ -24,3 +24,9 @@ th, td { text-align: start; padding: .55rem .65rem; border-bottom: 1px solid #51
 td code { white-space: pre-wrap; overflow-wrap: anywhere; }
 details { margin-top: 1rem; }
 summary { cursor: pointer; }
+
+.inspection-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
+.inspection-controls input[type="search"] { box-sizing: border-box; width: min(24rem, 100%); padding: .5rem; font: inherit; }
+.checkbox-label { display: flex; align-items: center; gap: .5rem; min-height: 2.25rem; }
+.inspection-table { max-height: 65vh; }
+.inspection-table th { position: sticky; top: 0; background: #202222; }

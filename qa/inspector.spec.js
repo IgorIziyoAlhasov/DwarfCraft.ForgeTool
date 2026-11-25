@@ -45,3 +45,21 @@ test('DCF-INS-003 preserves duplicates and reports unsupported versions', async 
   await expect(page.getByText(/Invalid integer/)).toBeVisible();
   await expect(page.getByText('9007199254740993', { exact: true })).toBeVisible();
 });
+
+test('DCF-INS-005 filters by label, path and raw value', async ({ page }) => {
+  await page.goto('/');
+  await upload(page, 'Primary bank', '<Bank version="1"><Section name="e0"><Key name="cp"><Value int="0003"/></Key><Key name="misc"><Value int="567"/></Key></Section></Bank>');
+  const search = page.getByRole('searchbox', { name: 'Search bank contents' });
+  const labeled = page.getByRole('checkbox', { name: 'Labeled fields only' });
+  await search.fill('LEVEL Progress');
+  await expect(page.getByRole('row').filter({ hasText: 'Level progress' })).toContainText('0003');
+  await search.fill('e0 / misc');
+  await expect(page.getByRole('row').filter({ hasText: 'e0 / misc' })).toContainText('567');
+  await search.fill('567');
+  await labeled.check();
+  await expect(page.getByText('No entries match these filters.')).toBeVisible();
+  await search.clear();
+  await expect(page.getByText('1 of 3 entries')).toBeVisible();
+  await labeled.uncheck();
+  await expect(page.getByText('3 of 3 entries')).toBeVisible();
+});
