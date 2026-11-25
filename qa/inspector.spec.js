@@ -63,3 +63,22 @@ test('DCF-INS-005 filters by label, path and raw value', async ({ page }) => {
   await labeled.uncheck();
   await expect(page.getByText('3 of 3 entries')).toBeVisible();
 });
+
+test('DCF-INS-006 compares labeled integer values and exposes original entry XML', async ({ page }) => {
+  await page.goto('/');
+  const primary = '<Bank version="1"><Section name="e0"><Key name="cp"><Value int="0003"/></Key><Key name="ap"><Value int="9"/></Key></Section></Bank>';
+  const secondary = '<Bank version="1"><Section name="e0"><Key name="cp"><Value int="0042"/></Key><Key name="cl"><Value int="5"/></Key></Section></Bank>';
+  await upload(page, 'Primary bank', primary);
+  await upload(page, 'Comparison bank (optional)', secondary, 'second.SC2Bank');
+  const comparison = page.getByRole('region', { name: 'Changed bank entries' });
+  const changed = comparison.getByRole('row').filter({ hasText: 'Level progress' });
+  await expect(changed).toContainText('Changed');
+  await expect(changed.getByText('0003', { exact: true })).toBeVisible();
+  await expect(changed.getByText('0042', { exact: true })).toBeVisible();
+  const original = changed.getByText('<Key name="cp"><Value int="0003"/></Key>', { exact: true });
+  await expect(original).toBeHidden();
+  await changed.getByText('XML', { exact: true }).first().click();
+  await expect(original).toBeVisible();
+  await expect(comparison.getByRole('row').filter({ hasText: 'Available enhancement points' })).toContainText('Removed');
+  await expect(comparison.getByRole('row').filter({ hasText: 'e0 / cl' })).toContainText('Added');
+});

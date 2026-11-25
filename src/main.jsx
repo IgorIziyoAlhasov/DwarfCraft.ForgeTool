@@ -75,18 +75,30 @@ function Inspection({ bank }) {
   </section>;
 }
 
+function ComparisonValue({ entry }) {
+  if (!entry) return <span aria-label="Entry absent">—</span>;
+  if (entry.integer == null) return <code>{entry.xml}</code>;
+  return <>
+    <code>{entry.integer}</code>
+    <details><summary>XML</summary><code>{entry.xml}</code></details>
+  </>;
+}
+
 function Comparison({ left, right }) {
   const changes = compareBanks(left, right);
   return <section className="card">
     <h2>Bank comparison</h2>
     <p>{left.hash === right.hash ? 'Byte-identical files.' : 'File hashes differ.'} {changes.length} structural changes.</p>
-    {changes.length > 0 && <div className="table-wrap"><table>
-      <thead><tr><th>Path</th><th>Status</th><th>{left.name}</th><th>{right.name}</th></tr></thead>
-      <tbody>{changes.map(change => <tr key={change.id}>
-        <td>{change.path}</td><td>{change.status}</td>
-        <td><code>{change.before?.xml ?? '—'}</code></td>
-        <td><code>{change.after?.xml ?? '—'}</code></td>
-      </tr>)}</tbody>
+    {changes.length > 0 && <div className="table-wrap inspection-table" tabIndex={0} role="region" aria-label="Changed bank entries"><table>
+      <thead><tr><th>Path</th><th>DwarfCraft label</th><th>Status</th><th>Primary · {left.name}</th><th>Comparison · {right.name}</th></tr></thead>
+      <tbody>{changes.map(({ id, path, status, before, after }) => {
+        const label = (before && observedLabel(left, before)) || (after && observedLabel(right, after));
+        return <tr key={id}>
+          <td>{path}</td><td>{label}</td><td>{status}</td>
+          <td><ComparisonValue entry={before} /></td>
+          <td><ComparisonValue entry={after} /></td>
+        </tr>;
+      })}</tbody>
     </table></div>}
   </section>;
 }
