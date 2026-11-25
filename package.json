@@ -1,0 +1,23 @@
+{
+  "name": "dwarfcraft-forgetool",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "qa:regressions": "playwright test"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "sass": "^1.108.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.2"
+  },
+  "private": true
+}
