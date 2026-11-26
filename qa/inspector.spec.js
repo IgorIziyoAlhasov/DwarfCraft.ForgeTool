@@ -116,5 +116,18 @@ test('DCF-INS-008 displays progression fields side by side and highlights unavai
   await expect(row('Energy rank')).toContainText('Ambiguous');
   await expect(row('Speed rank')).toContainText('Missing');
   await upload(page, 'Comparison bank (optional)', '<Bank version="2"/>', 'second.SC2Bank');
-  await expect(row('Level').getByRole('cell')).toHaveText(['5', 'Unavailable']);
+  await expect(row('Level').getByRole('cell')).toHaveText(['5', 'Unavailable', 'Unavailable']);
+});
+
+test('DCF-INS-009 filters comparable progression changes and displays exact differences', async ({ page }) => {
+  await page.goto('/');
+  const bank = (progress, level) => `<Bank version="1"><Section name="e0"><Key name="cp"><Value int="${progress}"/></Key><Key name="cl"><Value int="${level}"/></Key></Section></Bank>`;
+  await upload(page, 'Primary bank', bank('9007199254740995', '5'));
+  await upload(page, 'Comparison bank (optional)', bank('9007199254740993', '5'), 'second.SC2Bank');
+  const panel = page.getByRole('region', { name: 'Character progression' });
+  await panel.getByRole('checkbox').check();
+  await expect(panel.getByRole('row')).toHaveCount(2);
+  await expect(panel.getByRole('row').last().getByRole('cell')).toHaveText(['9007199254740995', '9007199254740993', '+2']);
+  await panel.getByRole('checkbox').uncheck();
+  await expect(panel.getByRole('row')).toHaveCount(11);
 });

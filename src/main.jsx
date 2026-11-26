@@ -136,16 +136,30 @@ function Comparison({ left, right }) {
 }
 
 function Progression({ bank, comparison }) {
+  const [changedOnly, setChangedOnly] = useState(false);
   const fields = progressionFields(bank);
   const other = comparison ? progressionFields(comparison) : null;
+  const rows = fields.map((field, index) => {
+    const previous = other?.[index].value;
+    const comparable = /^\+?\d+$/.test(field.value) && /^\+?\d+$/.test(previous ?? '');
+    const delta = comparable ? BigInt(field.value) - BigInt(previous) : null;
+    return { ...field, previous, delta };
+  });
+  const visible = rows.filter(row => !other || !changedOnly || (row.delta !== null && row.delta !== 0n));
   return <section className="card" aria-labelledby="progression-heading">
     <h2 id="progression-heading">Character progression</h2>
+    {other && <label className="checkbox-label">
+      <input type="checkbox" checked={changedOnly} onChange={event => setChangedOnly(event.target.checked)} />
+      Changed progression values only
+    </label>}
+    {other && <p>{visible.length} of {rows.length} progression fields</p>}
+    {other && visible.length === 0 && <p>No comparable progression values changed.</p>}
     <div className="table-wrap"><table>
-      <thead><tr><th>Field</th><th>{bank.name}</th>{other && <th>{comparison.name}</th>}</tr></thead>
-      <tbody>{fields.map((field, index) => <tr key={field.label}>
+      <thead><tr><th>Field</th><th>{bank.name}</th>{other && <><th>{comparison.name}</th><th>Primary − comparison</th></>}</tr></thead>
+      <tbody>{visible.map(field => <tr key={field.label}>
         <th scope="row">{field.label}</th>
         <td>{field.value}</td>
-        {other && <td>{other[index].value}</td>}
+        {other && <><td>{field.previous}</td><td>{field.delta === null ? "Unavailable" : field.delta > 0n ? "+" + field.delta : String(field.delta)}</td></> }
       </tr>)}</tbody>
     </table></div>
   </section>;
