@@ -12,7 +12,7 @@ test('DCF-INS-001 inspects a bank and compares values and unknown content', asyn
   const original = '\uFEFF<Bank version="1">\r\n<Section name="e0"><Key name="cp"><Value int="0003"/></Key><Extra><Child/></Extra></Section></Bank>';
   await upload(page, 'Primary bank', original);
   await expect(page.getByText(createHash('sha256').update(original).digest('hex'))).toBeVisible();
-  await expect(page.getByRole('row').filter({ hasText: 'Level progress' })).toContainText('0003');
+  await expect(page.getByRole('region', { name: 'Bank entries' }).getByRole('row').filter({ hasText: 'Level progress' })).toContainText('0003');
 
   await upload(page, 'Comparison bank (optional)', original.replace('0003', '0004').replace('<Child/>', '<Other/>'), 'second.SC2Bank');
   await expect(page.getByText('File hashes differ. 2 structural changes.')).toBeVisible();
@@ -52,7 +52,7 @@ test('DCF-INS-005 filters by label, path and raw value', async ({ page }) => {
   const search = page.getByRole('searchbox', { name: 'Search bank contents' });
   const labeled = page.getByRole('checkbox', { name: 'Labeled fields only' });
   await search.fill('LEVEL Progress');
-  await expect(page.getByRole('row').filter({ hasText: 'Level progress' })).toContainText('0003');
+  await expect(page.getByRole('region', { name: 'Bank entries' }).getByRole('row').filter({ hasText: 'Level progress' })).toContainText('0003');
   await search.fill('e0 / misc');
   await expect(page.getByRole('row').filter({ hasText: 'e0 / misc' })).toContainText('567');
   await search.fill('567');
@@ -101,4 +101,20 @@ test('DCF-INS-007 combines comparison filters independently of bank search', asy
   await search.clear();
   await expect(panel.getByRole('row').filter({ hasText: 'Available enhancement points' })).toContainText('Removed');
   await expect(page.getByRole('searchbox', { name: 'Search bank contents' })).toHaveValue('');
+});
+
+test('DCF-INS-008 displays progression fields side by side and highlights unavailable values', async ({ page }) => {
+  await page.goto('/');
+  const primary = '<Bank version="1"><Section name="e0"><Key name="cl"><Value int="5"/></Key><Key name="cp"><Value int="100"/></Key><Key name="ap"><Value int="2"/></Key></Section><Section name="e10"><Key name="1"><Value int="0"/></Key><Key name="2"><Value int="bad"/></Key><Key name="3"><Value int="1"/></Key><Key name="3"><Value int="2"/></Key></Section></Bank>';
+  await upload(page, 'Primary bank', primary);
+  const panel = page.getByRole('region', { name: 'Character progression' });
+  await expect(panel.getByRole('row')).toHaveCount(11);
+  const row = name => panel.getByRole('row').filter({ has: page.getByRole('rowheader', { name, exact: true }) });
+  await expect(row('Level')).toContainText('5');
+  await expect(row('Life rank')).toContainText('0');
+  await expect(row('Life regeneration rank')).toContainText('Invalid');
+  await expect(row('Energy rank')).toContainText('Ambiguous');
+  await expect(row('Speed rank')).toContainText('Missing');
+  await upload(page, 'Comparison bank (optional)', '<Bank version="2"/>', 'second.SC2Bank');
+  await expect(row('Level').getByRole('cell')).toHaveText(['5', 'Unavailable']);
 });

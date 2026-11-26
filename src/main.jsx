@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { compareBanks, readBank } from './bank.js';
-import { observedLabel } from './dwarfcraft.js';
+import { observedLabel, progressionFields } from './dwarfcraft.js';
 import './style.scss';
 
 function BankInput({ label, onChange }) {
@@ -135,6 +135,22 @@ function Comparison({ left, right }) {
   </section>;
 }
 
+function Progression({ bank, comparison }) {
+  const fields = progressionFields(bank);
+  const other = comparison ? progressionFields(comparison) : null;
+  return <section className="card" aria-labelledby="progression-heading">
+    <h2 id="progression-heading">Character progression</h2>
+    <div className="table-wrap"><table>
+      <thead><tr><th>Field</th><th>{bank.name}</th>{other && <th>{comparison.name}</th>}</tr></thead>
+      <tbody>{fields.map((field, index) => <tr key={field.label}>
+        <th scope="row">{field.label}</th>
+        <td>{field.value}</td>
+        {other && <td>{other[index].value}</td>}
+      </tr>)}</tbody>
+    </table></div>
+  </section>;
+}
+
 function App() {
   const [bank, setBank] = useState(null);
   const [comparison, setComparison] = useState(null);
@@ -144,6 +160,7 @@ function App() {
       <BankInput label="Primary bank" onChange={setBank} />
       <BankInput label="Comparison bank (optional)" onChange={setComparison} />
     </div>
+    {(bank ?? comparison) && <Progression bank={bank ?? comparison} comparison={bank ? comparison : null} />}
     {bank && comparison && <Comparison left={bank} right={comparison} />}
     {(bank ?? comparison) && <Inspection bank={bank ?? comparison} />}
   </main>;

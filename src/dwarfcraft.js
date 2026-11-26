@@ -14,3 +14,20 @@ export function observedLabel(bank, row) {
     ? labels[row.section][row.key]
     : '';
 }
+
+export function progressionFields(bank) {
+  const fields = ['e0', 'e10'].flatMap(section =>
+    Object.entries(labels[section]).map(([key, label]) => ({ section, key, label }))
+  );
+  return fields.map(field => {
+    const matches = bank.entries.filter(row => row.section === field.section && row.key === field.key);
+    let value = 'Unavailable';
+    if (bank.version === '1') {
+      if (matches.length > 1) value = 'Ambiguous';
+      else if (matches.length === 0) value = 'Missing';
+      else if (!/^\+?\d+$/.test(matches[0].integer ?? '')) value = 'Invalid';
+      else value = matches[0].integer;
+    }
+    return { ...field, value };
+  });
+}
